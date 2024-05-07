@@ -47,9 +47,10 @@ function ready_PlayerInfoChanged($aseco, $player_info) {
 }
 
 function ready_Status5($aseco, $call) {
+	global $ready_logins;
+	
 	// reset all ready statuses to prevent unnecessary output
 	$ready_logins = array();
-	$ready_max = 0;
 	
 	$message = formatText('{#server}>> $f00Non-spectators: {#admin}Press {#highlite}DEL {#admin}to ready-up and go to the next race!');
 	$aseco->client->query('ChatSendServerMessage', $aseco->formatColors($message));
