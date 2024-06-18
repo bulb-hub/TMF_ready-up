@@ -52,7 +52,7 @@ function ready_Status5($aseco, $call) {
 	// reset all ready statuses to prevent unnecessary output
 	$ready_logins = array();
 	
-	$message = formatText('{#server}>> $f00Non-spectators: {#admin}Press {#highlite}DEL {#admin}to ready-up and go to the next race!');
+	$message = formatText('{#server}>> $f00Non-spectators: {#admin}Press {#highlite}DEL {#admin}to ready-up and skip the waiting time!');
 	$aseco->client->query('ChatSendServerMessage', $aseco->formatColors($message));
 }
 
