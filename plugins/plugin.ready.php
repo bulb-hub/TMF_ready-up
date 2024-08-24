@@ -9,6 +9,10 @@ $ready_max = 0;
 function ready_PlayerInfoChanged($aseco, $player_info) {
 	global $ready_logins;
 	
+	if ($aseco->warmup_phase) {
+		return;
+	}
+	
 	// if we're on the podium screen
 	if ($aseco->currstatus == 5) {
 		foreach ($aseco->server->players->player_list as $player) {
@@ -49,10 +53,16 @@ function ready_PlayerInfoChanged($aseco, $player_info) {
 function ready_Status5($aseco, $call) {
 	global $ready_logins;
 	
+	// don't account for warmup phase ending
+	// most players just press DEL way too late and end up accidentially retiring
+	if ($aseco->warmup_phase) {
+		return;
+	}
+	
 	// reset all ready statuses to prevent unnecessary output
 	$ready_logins = array();
 	
-	$message = formatText('{#server}>> $f00Non-spectators: {#admin}Press {#highlite}DEL {#admin}to ready-up and skip the waiting time!');
+	$message = formatText('{#server}>> $f00Non-spectators: {#admin}Press {#highlite}DEL {#admin}to ready-up and go to the next race!');
 	$aseco->client->query('ChatSendServerMessage', $aseco->formatColors($message));
 }
 
