@@ -1,15 +1,17 @@
 <?php
 
 Aseco::registerEvent('onPlayerInfoChanged', 'ready_PlayerInfoChanged');
-Aseco::registerEvent('onStatusChangeTo5', 'ready_Status5');
+Aseco::registerEvent('onStatusChangeTo3', 'ready_Status3'); // Syncronizing 
+Aseco::registerEvent('onStatusChangeTo5', 'ready_Status5'); // Finish
 
 $ready_logins = array();
 $ready_max = 0;
+$ready_warmup = false;
 
 function ready_PlayerInfoChanged($aseco, $player_info) {
-	global $ready_logins;
+	global $ready_logins, $ready_warmup;
 	
-	if ($aseco->warmup_phase) {
+	if ($ready_warmup) {
 		return;
 	}
 	
@@ -50,12 +52,21 @@ function ready_PlayerInfoChanged($aseco, $player_info) {
 	}
 }
 
-function ready_Status5($aseco, $call) {
-	global $ready_logins;
+function ready_Status3($aseco) {
+	global $ready_warmup;
+	
+	// need to check for warmup here, it is too late in status5
+	// BUG: if skipping track in warmup, it will not show on podium screen!
+	$aseco->client->query('GetWarmUp');
+	$ready_warmup = $aseco->client->getResponse();
+}
+
+function ready_Status5($aseco) {
+	global $ready_logins, $ready_warmup;
 	
 	// don't account for warmup phase ending
 	// most players just press DEL way too late and end up accidentially retiring
-	if ($aseco->warmup_phase) {
+	if ($ready_warmup) {
 		return;
 	}
 	
