@@ -1,40 +1,45 @@
 <?php
 
 Aseco::registerEvent('onPlayerInfoChanged', 'ready_PlayerInfoChanged');
-Aseco::registerEvent('onStatusChangeTo3', 'ready_Status3'); // Syncronizing 
-Aseco::registerEvent('onStatusChangeTo5', 'ready_Status5'); // Finish
+Aseco::registerEvent('onNewChallenge', 'ready_NewChallenge');
+Aseco::registerEvent('onEndRace', 'ready_EndRace');
 
 $ready_logins = array();
 $ready_max = 0;
-$ready_warmup = false;
+$ready_enabled = false;
 
-function ready_PlayerInfoChanged($aseco, $player_info) {
-	global $ready_logins, $ready_warmup;
-	
-	if ($ready_warmup) {
-		return;
-	}
+function ready_PlayerInfoChanged($aseco, $player_info)
+{
+	global $ready_logins, $ready_enabled;
 	
 	// if we're on the podium screen
-	if ($aseco->currstatus == 5) {
-		foreach ($aseco->server->players->player_list as $player) {
+	if ($ready_enabled)
+	{
+		foreach ($aseco->server->players->player_list as $player)
+		{
 			// find player by login
 			$login = $player->login;
-			if ($login == $player_info['Login']) {
+			if ($login == $player_info['Login'])
+			{
 				// spectators can't ready-up, they are ignored
-				if (!$player->isspectator) {
+				if (!$player->isspectator)
+				{
+					// IsPodiumReady flag
 					$is_ready = floor($player_info['Flags'] / 100) % 10 == 1;
 					
 					// php treats empty arrays as null for some fucking reason, casuing errors when calling in_array
-					if (empty($ready_logins)) {
+					if (empty($ready_logins))
+					{
 						// it's safe to assume nobody is ready if the array is empty
-						if (!$is_ready) {
+						if (!$is_ready)
+						{
 							// if we're already in this state, don't duplicate output
 							return;
 						}
 					}
 					// if the array is not empty ie. not null
-					else {
+					else
+					{
 						if ((in_array($login, $ready_logins) && $is_ready) || !in_array($login, $ready_logins) && !$is_ready) {
 							// if we're already in this state, don't duplicate output
 							return;
@@ -52,23 +57,19 @@ function ready_PlayerInfoChanged($aseco, $player_info) {
 	}
 }
 
-function ready_Status3($aseco) {
-	global $ready_warmup;
+function ready_NewChallenge($aseco)
+{
+	global $ready_enabled;
+	$ready_enabled = false;
 	
-	// need to check for warmup here, it is too late in status5
-	// BUG: if skipping track in warmup, it will not show on podium screen!
-	$aseco->client->query('GetWarmUp');
-	$ready_warmup = $aseco->client->getResponse();
+	$message = formatText('{#server}>> {#admin}Ready-up period $f00ended{#admin}!');
+	$aseco->client->query('ChatSendServerMessage', $aseco->formatColors($message));
 }
 
-function ready_Status5($aseco) {
-	global $ready_logins, $ready_warmup;
-	
-	// don't account for warmup phase ending
-	// most players just press DEL way too late and end up accidentially retiring
-	if ($ready_warmup) {
-		return;
-	}
+function ready_EndRace($aseco)
+{
+	global $ready_logins, $ready_enabled;
+	$ready_enabled = true;
 	
 	// reset all ready statuses to prevent unnecessary output
 	$ready_logins = array();
@@ -77,15 +78,17 @@ function ready_Status5($aseco) {
 	$aseco->client->query('ChatSendServerMessage', $aseco->formatColors($message));
 }
 
-function ready_calc($aseco) {
+function ready_calc($aseco)
+{
 	global $ready_logins, $ready_max;
-	
 	$ready_logins = array();
 	$ready_max = 0;
 	
-	foreach ($aseco->server->players->player_list as &$player) {
+	foreach ($aseco->server->players->player_list as &$player)
+	{
 		// spectators can't ready-up, they are ignored
-		if ($player->isspectator) {
+		if ($player->isspectator)
+		{
 			continue;
 		}
 		
@@ -95,17 +98,21 @@ function ready_calc($aseco) {
 		$aseco->client->query('GetPlayerInfo', $login, 1);
 		$player_info = $aseco->client->getResponse();
 		
-		if (floor($player_info['Flags'] / 100) % 10 == 1) {
+		// IsPodiumReady flag
+		if (floor($player_info['Flags'] / 100) % 10 == 1)
+		{
 			array_push($ready_logins, $login);
 		}
 	}
 }
 
-function ready_print($aseco, $nickname, $is_ready) {
+function ready_print($aseco, $nickname, $is_ready)
+{
 	global $ready_logins, $ready_max;
 	
 	$status = '$f00not ready';
-	if ($is_ready) {
+	if ($is_ready)
+	{
 		$status = '$0f0ready';
 	}
 	
